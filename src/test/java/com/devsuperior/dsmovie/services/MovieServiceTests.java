@@ -21,6 +21,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import com.devsuperior.dsmovie.dto.MovieDTO;
 import com.devsuperior.dsmovie.entities.MovieEntity;
 import com.devsuperior.dsmovie.repositories.MovieRepository;
+import com.devsuperior.dsmovie.services.exceptions.ResourceNotFoundException;
 import com.devsuperior.dsmovie.tests.MovieFactory;
 
 import jakarta.persistence.EntityNotFoundException;
@@ -54,7 +55,7 @@ public class MovieServiceTests {
 		Mockito.when(repository.findById(nonExistingId)).thenReturn(Optional.empty());
 		Mockito.when(repository.save(any())).thenReturn(movie);
 		Mockito.when(repository.getReferenceById(existingId)).thenReturn(movie);
-		Mockito.when(repository.getReferenceById(existingId)).thenThrow(EntityNotFoundException.class);
+		Mockito.when(repository.getReferenceById(nonExistingId)).thenThrow(EntityNotFoundException.class);
 	}
 
 
@@ -70,22 +71,44 @@ public class MovieServiceTests {
 	
 	@Test
 	public void findByIdShouldReturnMovieDTOWhenIdExists() {
+		MovieDTO result = service.findById(existingId);
+		
+		Assertions.assertNotNull(result);
+		Assertions.assertEquals(movie.getTitle(), result.getTitle());
 	}
 	
 	@Test
 	public void findByIdShouldThrowResourceNotFoundExceptionWhenIdDoesNotExist() {
+		Assertions.assertThrows(ResourceNotFoundException.class, () -> {
+			service.findById(nonExistingId);
+		});
+		
+		Mockito.verify(repository, Mockito.times(1)).findById(nonExistingId);
 	}
-	
+
 	@Test
 	public void insertShouldReturnMovieDTO() {
+		MovieDTO result = service.insert(movieDTO);
+		
+		Assertions.assertNotNull(result);
+		Assertions.assertEquals(movieDTO.getTitle(), result.getTitle());
 	}
 	
 	@Test
 	public void updateShouldReturnMovieDTOWhenIdExists() {
+		MovieDTO result = service.update(existingId, movieDTO);
+		
+		Assertions.assertNotNull(result);
+		Assertions.assertEquals(existingId, result.getId());
+		Assertions.assertEquals(movie.getTitle(), result.getTitle());
 	}
 	
 	@Test
 	public void updateShouldThrowResourceNotFoundExceptionWhenIdDoesNotExist() {
+		Assertions.assertThrows(ResourceNotFoundException.class, () -> {
+			service.update(nonExistingId, movieDTO);
+		});
+		Mockito.verify(repository, Mockito.times(1)).getReferenceById(nonExistingId);
 	}
 	
 	@Test
